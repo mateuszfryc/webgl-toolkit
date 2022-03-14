@@ -33,7 +33,7 @@ function createProgram(gl, vertexShader, fragmentShader) {
   return program;
 }
 
-export function initializeOnce(vertexSource, fragmentSource, positions) {
+export default function initializeOnce(vertexSource, fragmentSource, positions) {
   const canvas = document.getElementById('canvas');
   !canvas && err('Could not find canvas in document');
 

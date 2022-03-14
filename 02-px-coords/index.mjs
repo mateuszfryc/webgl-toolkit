@@ -1,4 +1,4 @@
-import { initializeOnce } from 'tools';
+import initializeOnce from './tools.mjs';
 
 const rectangleVertex = `
   // an attribute will receive data from a buffer
@@ -32,14 +32,30 @@ const rectangleFragment = `
   }
 `;
 
+/*
+  Two triangles, three points each
+
+  top right triangle
+   _____
+    \  |
+  |\ \ |
+  | \ \|
+  |__\
+
+  bottom left triangle
+
+*/
 // prettier-ignore
 const rectanglePositions = [
-  10, 20,
-  80, 20,
-  10, 30,
-  10, 30,
-  80, 20,
-  80, 30
+  // triangle in top right corner of the ractangle
+  100, 300, // top left point
+  800, 200, // bottom right point
+  800, 300,  // top right point
+
+  // triangle in the left bottom corner of the rectangle
+  100, 200,  // left bottom point
+  800, 200, // right bottom point
+  100, 300,  // top left point
 ];
 
 window.addEventListener('load', () => {
