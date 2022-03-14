@@ -1,0 +1,16 @@
+{
+  "name": "webgl-trainings",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/YesIDont/webgl-trainings",
+  "author": "YesIDont <mateuszfryc@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "^8.11.0"
+  },
+  "dependencies": {
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-import": "^2.25.4",
+    "eslint-plugin-prettier": "^4.0.0"
+  }
+}

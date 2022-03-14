@@ -1,3 +1,35 @@
+const vertexSource = `
+  // an attribute will receive data from a buffer
+  attribute vec4 a_position;
+
+  // all shaders have a main function
+  void main() {
+
+    // gl_Position is a special variable a vertex shader
+    // is responsible for setting
+    gl_Position = a_position;
+  }
+`;
+
+const fragmentSource = `
+  // fragment shaders don't have a default precision so we need
+  // to pick one. mediump is a good default
+  precision mediump float;
+
+  void main() {
+    // gl_FragColor is a special variable a fragment shader
+    // is responsible for setting
+    gl_FragColor = vec4(1, 0, 0.5, 1); // return reddish-purple
+  }
+`;
+
+// prettier-ignore
+const positions = [
+  0, 0,
+  0.5, 0,
+  0, 0.5
+];
+
 const err = (message) => {
   throw new Error(message);
 };
@@ -33,7 +65,7 @@ function createProgram(gl, vertexShader, fragmentShader) {
   return program;
 }
 
-function initializeOnce(vertexSource, fragmentSource, positions) {
+function initializeOnce() {
   const canvas = document.getElementById('canvas');
   !canvas && err('Could not find canvas in document');
 
@@ -46,10 +78,7 @@ function initializeOnce(vertexSource, fragmentSource, positions) {
 
   // looking up locations should be done during initialisation, not in the render loop
   const positionAttributeLocation = gl.getAttribLocation(program, 'a_position');
-  const resolutionUniformLocation = gl.getUniformLocation(
-    program,
-    'u_resolution'
-  );
+  const resolutionUniformLocation = gl.getUniformLocation(program, 'u_resolution');
   // create buffer that will hold data of that attribute
   const positionBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
@@ -84,16 +113,14 @@ function initializeOnce(vertexSource, fragmentSource, positions) {
     const normalize = false; // don't normalize the data
     const stride = 0; // 0 = move forward size * sizeof(type) each iteration to get the next position
     const offset = 0; // start at the beginning of the buffer
-    gl.vertexAttribPointer(
-      positionAttributeLocation,
-      size,
-      type,
-      normalize,
-      stride,
-      offset
-    );
+    gl.vertexAttribPointer(positionAttributeLocation, size, type, normalize, stride, offset);
 
     const count = positions.length / size;
     gl.drawArrays(gl.TRIANGLES, offset, count);
   };
 }
+
+window.addEventListener('load', () => {
+  const drawTriangle = initializeOnce();
+  drawTriangle();
+});
