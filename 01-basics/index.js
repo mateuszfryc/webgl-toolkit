@@ -23,6 +23,26 @@ const fragmentSource = `
   }
 `;
 
+/*
+  coordinates in screen clip space,
+  where width and height of the drawing plane
+  is defined from the center of the screen (point 0, 0), where:
+  - left edge is -1
+  - right edge is 1
+  - top edge is 1
+  - bottom is -1
+
+  like this:
+
+              1
+      ----------------
+      |              |
+  -1  |      0,0     |  1
+      |              |
+      ----------------
+             -1
+*/
+
 // prettier-ignore
 const positions = [
   0, 0,
@@ -69,6 +89,7 @@ function initializeOnce() {
   const canvas = document.getElementById('canvas');
   !canvas && err('Could not find canvas in document');
 
+  // try to get the webgl context, if not present the browser doesn't supports it
   const gl = canvas.getContext('webgl');
   !gl && err('WebGL context not avilable');
 
