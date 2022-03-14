@@ -1,128 +1,16 @@
-const err = (message) => {
-  throw new Error(message);
-};
-
-function createShader(gl, type, source) {
-  const shader = gl.createShader(type);
-  gl.shaderSource(shader, source);
-  gl.compileShader(shader);
-  const success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
-
-  if (!success) {
-    console.log(gl.getShaderInfoLog(shader));
-    gl.deleteShader(shader);
-    err('Could not create shader');
-  }
-
-  return shader;
-}
-
-function createProgram(gl, vertexShader, fragmentShader) {
-  const program = gl.createProgram();
-  gl.attachShader(program, vertexShader);
-  gl.attachShader(program, fragmentShader);
-  gl.linkProgram(program);
-  const success = gl.getProgramParameter(program, gl.LINK_STATUS);
-
-  if (!success) {
-    console.log(gl.getProgramInfoLog(program));
-    gl.deleteProgram(program);
-    err('Could not create GLSL program');
-  }
-
-  return program;
-}
-
-function initialiseOnce() {
-  const canvas = document.getElementById('canvas');
-  !canvas && err('Could not find canvas in document');
-
-  const gl = canvas.getContext('webgl');
-  !gl && err('WebGL context not avilable');
-
-  const vertexSource = `
-    // an attribute will receive data from a buffer
-    attribute vec2 a_position;
-
-    // all shaders have a main function
-    void main() {
-
-      // gl_Position is a special variable a vertex shader
-      // is responsible for setting
-      gl_Position = vec4(a_position, 0., 1.);
-    }
-  `;
-
-  const fragmentSource = `
-    // fragment shaders don't have a default precision so we need
-    // to pick one. mediump is a good default
-    precision mediump float;
-
-    void main() {
-      // gl_FragColor is a special variable a fragment shader
-      // is responsible for setting
-      gl_FragColor = vec4(1, 0, 0.5, 1); // return reddish-purple
-    }
-  `;
-
-  const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexSource);
-  const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentSource);
-  const program = createProgram(gl, vertexShader, fragmentShader);
-
-  // looking up locations should be done during initialisation, not in the render loop
-  const positionAttributeLocation = gl.getAttribLocation(program, 'a_position');
-  // create buffer that will hold data of that attribute
-  const positionBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-  // Now we can put data in that buffer by referencing it through the bind point
-  // three 2d points
-  // prettier-ignore
-  const positions = [
-    0, 0,
-    0, 0.5,
-    0.5, 0
-  ];
-  gl.bufferData(
-    gl.ARRAY_BUFFER,
-    new Float32Array(positions),
-    gl.DYNAMIC_DRAW //gl.STATIC_DRAW
-  );
-
-  return function render() {
-    gl.canvas.width = window.innerWidth;
-    gl.canvas.height = window.innerHeight;
-    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-    // Clear the canvas
-    gl.clearColor(0, 0, 0, 0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    // Tell it to use our program (pair of shaders)
-    gl.useProgram(program);
-    gl.enableVertexAttribArray(positionAttributeLocation);
-
-    // Bind the position buffer.
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-
-    // Tell the attribute how to get data out of positionBuffer (ARRAY_BUFFER)
-    const size = 2; // 2 components per iteration
-    const type = gl.FLOAT; // the data is 32bit floats
-    const normalize = false; // don't normalize the data
-    const stride = 0; // 0 = move forward size * sizeof(type) each iteration to get the next position
-    const offset = 0; // start at the beginning of the buffer
-    gl.vertexAttribPointer(
-      positionAttributeLocation,
-      size,
-      type,
-      normalize,
-      stride,
-      offset
-    );
-
-    const count = positions.length / size;
-    gl.drawArrays(gl.TRIANGLES, offset, count);
-  };
-}
-
 window.addEventListener('load', () => {
-  const render = initialiseOnce();
-  render();
+  // draw triangle by positioning it with points made of clip space coordinates (0 - 1)
+  const drawTriangle = initializeOnce(
+    triangleVertex,
+    triangleFragment,
+    trianglePositions
+  );
+  drawTriangle();
+
+  const drawRectangle = initializeOnce(
+    rectangleVertex,
+    rectangleFragment,
+    rectanglePositions
+  );
+  drawRectangle();
 });

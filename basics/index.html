@@ -20,11 +20,27 @@
         width: 100vw;
         height: 100vh;
       }
+
+      #buttons {
+        position: fixed
+      }
+
+      button {
+        padding: 5px 8px;
+      }
     </style>
   </head>
 
   <body>
+    <div id="buttons">
+      <button id="triangle" type="button">Draw triangle</button>
+      <button id="rectangle" type="button">Draw rectangle</button>
+    </div>
     <canvas id="canvas"></canvas>
+
+    <script src="tools.js"></script>
+    <script src="simple-triangle.js"></script>
+    <script src="rectangle-positioned-with-pixels.js"></script>
     <script src="index.js"></script>
   </body>
 
