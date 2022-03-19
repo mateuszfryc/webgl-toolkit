@@ -1,4 +1,4 @@
-import initializeOnce from './tools.mjs';
+import { initializeOnce } from '../tools.mjs';
 
 const rectangleVertex = `
   // an attribute will receive data from a buffer
@@ -15,6 +15,10 @@ const rectangleVertex = `
 
     // convert from 0->2 to -1->+1 (clip space)
     vec2 clipSpace = zeroToTwo - 1.0;
+
+    // invert y coordinates to match canvas's 2d context coordinates
+    // that go on y axis from 0 up from the top
+    clipSpace.y *= -1.;
 
     gl_Position = vec4(clipSpace, 0., 1.);
   }
@@ -46,19 +50,21 @@ const rectangleFragment = `
 
 */
 // prettier-ignore
-const rectanglePositions = [
-  // triangle in top right corner of the ractangle
-  100, 300, // top left point
-  800, 200, // bottom right point
-  800, 300,  // top right point
+const buffersData = {
+  position: [
+    // triangle in top right corner of the ractangle
+    100, 300, // top left point
+    800, 200, // bottom right point
+    800, 300,  // top right point
 
-  // triangle in the left bottom corner of the rectangle
-  100, 200,  // left bottom point
-  800, 200, // right bottom point
-  100, 300,  // top left point
-];
+    // triangle in the left bottom corner of the rectangle
+    100, 200,  // left bottom point
+    800, 200, // right bottom point
+    100, 300,  // top left point
+  ]
+};
 
 window.addEventListener('load', () => {
-  const drawRectangle = initializeOnce(rectangleVertex, rectangleFragment, rectanglePositions);
+  const drawRectangle = initializeOnce(rectangleVertex, rectangleFragment, buffersData);
   drawRectangle();
 });

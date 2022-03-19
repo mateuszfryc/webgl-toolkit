@@ -99,10 +99,12 @@ function initializeOnce() {
 
   // looking up locations should be done during initialisation, not in the render loop
   const positionAttributeLocation = gl.getAttribLocation(program, 'a_position');
-  const resolutionUniformLocation = gl.getUniformLocation(program, 'u_resolution');
+
   // create buffer that will hold data of that attribute
   const positionBuffer = gl.createBuffer();
+  // use it
   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+
   // Now we can put data in that buffer by referencing it through the bind point
   // six 2d points - two triangles that make up the rectangle
   // prettier-ignore
@@ -115,14 +117,18 @@ function initializeOnce() {
   return function render() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+
+    // gl.viewport tells WebGL how to convert from clip space (-1 to +1) back to pixels and where to do it within the canvas
     gl.viewport(0, 0, canvas.width, canvas.height);
+
     // Clear the canvas
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
+
     // Tell it to use our program (pair of shaders)
     gl.useProgram(program);
-    // set the resolution
-    gl.uniform2f(resolutionUniformLocation, gl.canvas.width, gl.canvas.height);
+
+    // Turn on the attribute
     gl.enableVertexAttribArray(positionAttributeLocation);
 
     // Bind the position buffer.
