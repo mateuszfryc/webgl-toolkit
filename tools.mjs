@@ -119,6 +119,7 @@ export function initializeOnce(vertexSource, fragmentSource, buffersData, render
 
   const { program, params } = createProgram(gl, vertexSource, fragmentSource);
   const { uniforms, attributes } = params;
+  const passesCount = Math.round(buffersData.position.length);
 
   const buffers = [[createBuffer(gl, buffersData.position), attributes.position.location]];
 
@@ -149,7 +150,7 @@ export function initializeOnce(vertexSource, fragmentSource, buffersData, render
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
   }
 
-  return () => {
+  return (updatedData) => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     gl.viewport(0, 0, canvas.width, canvas.height);
@@ -174,13 +175,13 @@ export function initializeOnce(vertexSource, fragmentSource, buffersData, render
 
     gl.uniform2f(uniforms.resolution.location, canvas.width, canvas.height);
 
-    const drawArraysHere = renderer ? renderer(gl, uniforms, attributes) : true;
+    const drawArraysHere = renderer ? renderer(gl, uniforms, attributes, updatedData) : true;
 
     if (drawArraysHere) {
       gl.drawArrays(
         gl.TRIANGLES, // gl.TRIANGLES
         0, // offset
-        6, // count
+        passesCount / 2, // count
       );
     }
   };
