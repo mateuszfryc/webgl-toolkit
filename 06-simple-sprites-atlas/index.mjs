@@ -54,55 +54,18 @@ const spritesAtlasData = [
   },
 ];
 
-const renderrablesData = [
-  {
-    spriteIndex: 0,
-    position: [30, 120],
-  },
-  {
-    spriteIndex: 0,
-    position: [400, 20],
-  },
-  {
-    spriteIndex: 1,
-    position: [700, 420],
-  },
-  {
-    spriteIndex: 1,
-    position: [40, 320],
-  },
-  {
-    spriteIndex: 0,
-    position: [30, 120],
-  },
-  {
-    spriteIndex: 0,
-    position: [400, 20],
-  },
-  {
-    spriteIndex: 1,
-    position: [700, 420],
-  },
-  {
-    spriteIndex: 1,
-    position: [40, 320],
-  },
-  {
-    spriteIndex: 0,
-    position: [30, 120],
-  },
-  {
-    spriteIndex: 0,
-    position: [400, 20],
-  },
-];
+const randomInt = (min, max) => Math.round(Math.random() * (max - min) + min);
 
-const random = (min, max) => Math.random() * (max - min) + min;
-
-renderrablesData.forEach((image) => {
-  image.position[0] += random(0, 500);
-  image.position[1] += random(0, 500);
-});
+// generate renderable sprites data, where each entry
+// consists of:
+// [spriteIndex, x position, y position]
+const renderrablesData = Array.from({ length: 100 }, () => [
+  // random index
+  randomInt(0, 1),
+  // random x and y
+  randomInt(0, 500),
+  randomInt(0, 500),
+]);
 
 window.addEventListener('load', () => {
   const image = new Image();
@@ -110,17 +73,15 @@ window.addEventListener('load', () => {
 
   image.onload = () => {
     function render(gl, _c, uniforms, _a, renderables) {
-      renderables.forEach(({ spriteIndex, position }) => {
-        gl.uniform2f(uniforms.translation.location, position[0], position[1]);
+      renderables.forEach((data) => {
+        gl.uniform2f(uniforms.translation.location, data[1], data[2]);
 
         gl.drawArrays(
           gl.TRIANGLES, // gl.TRIANGLES
-          spriteIndex * 6, // offset
+          data[0] * 6, // offset
           6, // count
         );
       });
-
-      return false;
     }
 
     const [gl] = getWebGLContext();
@@ -135,9 +96,9 @@ window.addEventListener('load', () => {
     );
 
     function frame() {
-      renderrablesData.forEach((image) => {
-        image.position[0] += random(-0.5, 0.5);
-        image.position[1] += random(-0.5, 0.5);
+      renderrablesData.forEach((data) => {
+        data[1] += randomInt(-1, 1);
+        data[2] += randomInt(-1, 1);
       });
 
       renderImage(renderrablesData);
