@@ -1,11 +1,11 @@
-import { initializeOnce, getRectangleCoords } from '../tools.mjs';
+import { initializeOnce, getWebGLContext } from '../tools.mjs';
 
 const vertexSource = `
   attribute vec2 a_position;
-  attribute vec2 a_texCoord;
+  attribute vec2 a_uv;
   uniform vec2 u_resolution;
   uniform vec2 u_translation;
-  varying vec2 v_texCoord;
+  varying vec2 v_uv;
 
   void main() {
     vec2 position = a_position + u_translation;
@@ -21,9 +21,9 @@ const vertexSource = `
 
     gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);
 
-    // pass the texCoord to the fragment shader
+    // pass the uv to the fragment shader
     // The GPU will interpolate this value between points.
-    v_texCoord = a_texCoord;
+    v_uv = a_uv;
   }
 `;
 
@@ -33,15 +33,15 @@ const fragmentSource = `
   // our texture
   uniform sampler2D u_image;
 
-  // the texCoords passed in from the vertex shader.
-  varying vec2 v_texCoord;
+  // the uvs passed in from the vertex shader.
+  varying vec2 v_uv;
 
   void main() {
-    gl_FragColor = texture2D(u_image, v_texCoord);
+    gl_FragColor = texture2D(u_image, v_uv);
   }
 `;
 
-const spritesData = [
+const spritesAtlasData = [
   // sprite index 0
   {
     position: [0, 0],
@@ -109,25 +109,7 @@ window.addEventListener('load', () => {
   image.src = './tiles.jpg';
 
   image.onload = () => {
-    const { width, height } = image;
-
-    // create triangles points (position) and texture coordiantes (UVs) from sprites data
-    const buffersData = {
-      position: spritesData.map(({ size }) => getRectangleCoords(0, 0, size[0], size[1])).flat(),
-
-      texCoord: spritesData
-        .map(({ position, size }) =>
-          getRectangleCoords(
-            position[0] / width,
-            position[1] / height,
-            size[0] / width,
-            size[1] / height,
-          ),
-        )
-        .flat(),
-    };
-
-    function update(gl, uniforms, _, renderables) {
+    function render(gl, _c, uniforms, _a, renderables) {
       renderables.forEach(({ spriteIndex, position }) => {
         gl.uniform2f(uniforms.translation.location, position[0], position[1]);
 
@@ -141,7 +123,16 @@ window.addEventListener('load', () => {
       return false;
     }
 
-    const renderImage = initializeOnce(vertexSource, fragmentSource, buffersData, update, image);
+    const [gl] = getWebGLContext();
+    const renderImage = initializeOnce(
+      gl,
+      vertexSource,
+      fragmentSource,
+      null,
+      render,
+      image,
+      spritesAtlasData,
+    );
 
     function frame() {
       renderrablesData.forEach((image) => {

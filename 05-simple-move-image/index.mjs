@@ -1,13 +1,13 @@
-import { initializeOnce, getRectangleCoords } from '../tools.mjs';
+import { getWebGLContext, initializeOnce, getRectangleCoords } from '../tools.mjs';
 
 const vertexSource = `
   attribute vec2 a_position;
-  attribute vec2 a_texCoord;
+  attribute vec2 a_uv;
 
   uniform vec2 u_resolution;
   uniform vec2 u_translation;
 
-  varying vec2 v_texCoord;
+  varying vec2 v_uv;
 
   void main() {
     vec2 position = a_position + u_translation;
@@ -24,9 +24,9 @@ const vertexSource = `
     // flip y coordiantes to match the usual browser approach
     gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);
 
-    // pass the texCoord to the fragment shader
+    // pass the uv to the fragment shader
     // The GPU will interpolate this value between points.
-    v_texCoord = a_texCoord;
+    v_uv = a_uv;
   }
 `;
 
@@ -36,11 +36,11 @@ const fragmentSource = `
   // our texture
   uniform sampler2D u_image;
 
-  // the texCoords passed in from the vertex shader.
-  varying vec2 v_texCoord;
+  // the uvs passed in from the vertex shader.
+  varying vec2 v_uv;
 
   void main() {
-    gl_FragColor = texture2D(u_image, v_texCoord);
+    gl_FragColor = texture2D(u_image, v_uv);
   }
 `;
 
@@ -55,11 +55,15 @@ document.addEventListener('mousemove', (event) => {
   mousePosition.y = e.pageY ?? e.clientY ?? 0;
 });
 
-function render(gl, uniforms) {
+function render(gl, _, uniforms) {
   // set the translation (change to initial position)
   gl.uniform2f(uniforms.translation.location, mousePosition.x, mousePosition.y);
 
-  return true;
+  gl.drawArrays(
+    gl.TRIANGLES, // gl.TRIANGLES
+    0, // offset
+    6, // count
+  );
 }
 
 window.addEventListener('load', () => {
@@ -70,7 +74,15 @@ window.addEventListener('load', () => {
     const buffersData = {
       position: getRectangleCoords(0, 0, image.width, image.height),
     };
-    const renderImage = initializeOnce(vertexSource, fragmentSource, buffersData, render, image);
+    const [gl] = getWebGLContext();
+    const renderImage = initializeOnce(
+      gl,
+      vertexSource,
+      fragmentSource,
+      buffersData,
+      render,
+      image,
+    );
 
     function frame() {
       renderImage();

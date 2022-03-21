@@ -1,4 +1,4 @@
-import { initializeOnce } from '../tools.mjs';
+import { getWebGLContext, initializeOnce } from '../tools.mjs';
 
 const rectangleVertex = `
   // an attribute will receive data from a buffer
@@ -65,6 +65,7 @@ const buffersData = {
 };
 
 window.addEventListener('load', () => {
-  const drawRectangle = initializeOnce(rectangleVertex, rectangleFragment, buffersData);
+  const [gl] = getWebGLContext();
+  const drawRectangle = initializeOnce(gl, rectangleVertex, rectangleFragment, buffersData);
   drawRectangle();
 });

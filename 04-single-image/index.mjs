@@ -1,12 +1,12 @@
-import { initializeOnce, getRectangleCoords } from '../tools.mjs';
+import { getWebGLContext, initializeOnce, getRectangleCoords } from '../tools.mjs';
 
 const vertexSource = `
   attribute vec2 a_position;
-  attribute vec2 a_texCoord;
+  attribute vec2 a_uv;
 
   uniform vec2 u_resolution;
 
-  varying vec2 v_texCoord;
+  varying vec2 v_uv;
 
   void main() {
     // convert the rectangle from pixels to 0.0 to 1.0
@@ -20,9 +20,9 @@ const vertexSource = `
 
     gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);
 
-    // pass the texCoord to the fragment shader
+    // pass the uv to the fragment shader
     // The GPU will interpolate this value between points.
-    v_texCoord = a_texCoord;
+    v_uv = a_uv;
   }
 `;
 
@@ -32,11 +32,11 @@ const fragmentSource = `
   // our texture
   uniform sampler2D u_image;
 
-  // the texCoords passed in from the vertex shader.
-  varying vec2 v_texCoord;
+  // the uvs passed in from the vertex shader.
+  varying vec2 v_uv;
 
   void main() {
-    gl_FragColor = texture2D(u_image, v_texCoord);
+    gl_FragColor = texture2D(u_image, v_uv);
   }
 `;
 
@@ -48,7 +48,15 @@ window.addEventListener('load', () => {
     const buffersData = {
       position: getRectangleCoords(0, 0, image.width, image.height),
     };
-    const renderImage = initializeOnce(vertexSource, fragmentSource, buffersData, false, image);
+    const [gl] = getWebGLContext();
+    const renderImage = initializeOnce(
+      gl,
+      vertexSource,
+      fragmentSource,
+      buffersData,
+      undefined,
+      image,
+    );
 
     renderImage();
   };

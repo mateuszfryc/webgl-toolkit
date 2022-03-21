@@ -2,6 +2,16 @@ const err = (message) => {
   throw new Error(message);
 };
 
+export function getWebGLContext() {
+  const canvas = document.getElementById('canvas');
+  !canvas && err('Could not find canvas in document');
+
+  const gl = canvas.getContext('webgl');
+  !gl && err('WebGL context not avilable');
+
+  return [gl, canvas];
+}
+
 // Returns a random integer from 0 to range - 1.
 export function randomInt(range) {
   return Math.floor(Math.random() * range);
@@ -73,7 +83,6 @@ function findParams(gl, program) {
       params[isUniform ? 'uniforms' : 'attributes'][name] = {
         location,
         type: details.type,
-        name,
       };
     }
     isUniform++;
@@ -105,50 +114,79 @@ export function createProgram(gl, vertexShaderSource, fragmentShaderSource) {
 function createBuffer(gl, data) {
   const buffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.DYNAMIC_DRAW);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW);
 
   return buffer;
 }
 
-export function initializeOnce(vertexSource, fragmentSource, buffersData, renderer, image) {
-  const canvas = document.getElementById('canvas');
-  !canvas && err('Could not find canvas in document');
+function setupTexture(gl, image) {
+  // Create a texture.
+  const texture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, texture);
 
-  const gl = canvas.getContext('webgl');
-  !gl && err('WebGL context not avilable');
+  // Set the parameters so we can render any size image.
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+  // Upload the image into the texture.
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+
+  return texture;
+}
+
+function defaultRenderer(gl, passesCount) {
+  gl.drawArrays(
+    gl.TRIANGLES, // gl.TRIANGLES
+    0, // offset
+    passesCount, // count
+  );
+}
+
+export function initializeOnce(
+  gl,
+  vertexSource,
+  fragmentSource,
+  buffersData = undefined,
+  renderer = defaultRenderer,
+  image = undefined,
+  spritesAtlasData = undefined,
+) {
+  const { canvas } = gl;
 
   const { program, params } = createProgram(gl, vertexSource, fragmentSource);
   const { uniforms, attributes } = params;
-  const passesCount = Math.round(buffersData.position.length);
 
-  const buffers = [[createBuffer(gl, buffersData.position), attributes.position.location]];
+  const positionsCoord = spritesAtlasData
+    ? spritesAtlasData.map(({ size }) => getRectangleCoords(0, 0, size[0], size[1])).flat()
+    : buffersData.position;
 
-  if (params.attributes.texCoord) {
-    buffers.push([
-      createBuffer(
-        gl,
-        buffersData.texCoord /* default UVs */ ?? [
-          0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0,
-        ],
-      ),
-      attributes.texCoord.location,
-    ]);
+  // prettier-ignore
+  const uv = spritesAtlasData
+    ? spritesAtlasData
+      .map(({ position, size }) =>
+        getRectangleCoords(
+          position[0] / image.width,
+          position[1] / image.height,
+          size[0] / image.width,
+          size[1] / image.height,
+        ),
+      )
+      .flat()
+    : params.attributes.uv
+      ? buffersData.uv /* default UVs */ ?? [
+        0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0,
+      ]
+      : undefined;
+
+  const buffers = [[createBuffer(gl, positionsCoord), attributes.position.location]];
+
+  if (uv) {
+    buffers.push([createBuffer(gl, uv), attributes.uv.location]);
   }
 
-  if (image) {
-    // Create a texture.
-    const newTexture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, newTexture);
-
-    // Set the parameters so we can render any size image.
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-
-    // Upload the image into the texture.
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-  }
+  if (image) setupTexture(gl, image);
 
   return (updatedData) => {
     canvas.width = window.innerWidth;
@@ -163,26 +201,19 @@ export function initializeOnce(vertexSource, fragmentSource, buffersData, render
     gl.useProgram(program);
 
     buffers.forEach(([buffer, location]) => {
-      // Turn on the texcoord attribute
+      // Turn on the uv attribute
       gl.enableVertexAttribArray(location);
 
-      // bind the texcoord buffer.
+      // bind the uv buffer.
       gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
 
-      // Tell the texcoord attribute how to get data out of texcoordBuffer (ARRAY_BUFFER)
+      // Tell the uv attribute how to get data out of uvBuffer (ARRAY_BUFFER)
       gl.vertexAttribPointer(location, 2, gl.FLOAT, false, 0, 0);
     });
 
     gl.uniform2f(uniforms.resolution.location, canvas.width, canvas.height);
 
-    const drawArraysHere = renderer ? renderer(gl, uniforms, attributes, updatedData) : true;
-
-    if (drawArraysHere) {
-      gl.drawArrays(
-        gl.TRIANGLES, // gl.TRIANGLES
-        0, // offset
-        passesCount / 2, // count
-      );
-    }
+    const renderPassesCount = Math.round(positionsCoord.length) / 2;
+    renderer(gl, renderPassesCount, uniforms, attributes, updatedData);
   };
 }

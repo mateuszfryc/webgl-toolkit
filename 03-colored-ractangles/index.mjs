@@ -1,4 +1,4 @@
-import { initializeOnce, setRectangle, randomInt } from '../tools.mjs';
+import { getWebGLContext, initializeOnce, setRectangle, randomInt } from '../tools.mjs';
 
 const rectangleVertex = `
   attribute vec2 a_position;
@@ -53,7 +53,7 @@ const buffersData = {position:[
   100, 300,  // top left point
 ]};
 
-function render(gl, uniforms) {
+function render(gl, _, uniforms) {
   // draw 50 random rectangles in random colors
   for (let ii = 0; ii < 50; ++ii) {
     // Setup a random rectangle
@@ -76,6 +76,7 @@ function render(gl, uniforms) {
 }
 
 window.addEventListener('load', () => {
-  const drawRectangle = initializeOnce(rectangleVertex, rectangleFragment, buffersData, render);
+  const [gl] = getWebGLContext();
+  const drawRectangle = initializeOnce(gl, rectangleVertex, rectangleFragment, buffersData, render);
   drawRectangle();
 });
