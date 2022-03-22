@@ -191,13 +191,17 @@ export function newWebGLRenderer(
       ?? buffersData?.uv
       ?? [0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0];
 
-    // prettier-ignore
-    const pivot =
-      spritesAtlasData?.map(({ size }) => getPivotPoints(size[0], size[1])).flat()
-      ?? getPivotPoints(image.width, image.height);
-
     buffers.push([createBuffer(gl, uv), attributes.uv.location]);
-    if (attributes.pivot) buffers.push([createBuffer(gl, pivot), attributes.pivot.location]);
+
+    if (attributes.pivot) {
+      // prettier-ignore
+      const pivot =
+        spritesAtlasData?.map(({ size }) => getPivotPoints(size[0], size[1])).flat()
+        ?? getPivotPoints(image.width, image.height);
+
+      buffers.push([createBuffer(gl, pivot), attributes.pivot.location]);
+    }
+
     setupTexture(gl, image);
   }
 
