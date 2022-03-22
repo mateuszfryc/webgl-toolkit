@@ -15,6 +15,15 @@ export function getWebGLContext() {
   return [gl, canvas];
 }
 
+function getUvFromSpriteData(image, { position, size }) {
+  return getRectangleCoords(
+    position[0] / image.width,
+    position[1] / image.height,
+    size[0] / image.width,
+    size[1] / image.height,
+  );
+}
+
 function getPivotPoints(width, height) {
   return Array.from({ length: 6 }, () => [-0.5 * width, -0.5 * height]).flat();
 }
@@ -155,14 +164,6 @@ function defaultRenderer(gl, passesCount) {
   );
 }
 
-function getUvFromSpriteData(image, { position, size }) {
-  return getRectangleCoords(
-    position[0] / image.width,
-    position[1] / image.height,
-    size[0] / image.width,
-    size[1] / image.height,
-  );
-}
 export function newWebGLRenderer(
   gl,
   vertexSource,
