@@ -120,8 +120,8 @@ window.addEventListener('load', () => {
 
     function frame() {
       renderrablesData.forEach((data) => {
-        // data[3] = (Math.sin(performance.now() * 0.001) + 2) * 0.3;
-        data[4] += 0.005;
+        data[3] = (Math.sin(performance.now() * 0.001) + 1.5) * 0.2;
+        data[4] += 0.01;
       });
       renderImage(renderrablesData);
 
