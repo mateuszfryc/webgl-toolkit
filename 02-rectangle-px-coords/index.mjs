@@ -1,37 +1,19 @@
-import { getWebGLContext, initializeOnce } from '../tools.mjs';
+import { getWebGLContext, newWebGLRenderer } from '../webgl-toolkit.mjs';
 
 const rectangleVertex = `
-  // an attribute will receive data from a buffer
   attribute vec2 a_position;
-  uniform vec2 u_resolution;
+  uniform mat3 u_projection;
 
   // all shaders have a main function
   void main() {
-    // convert the position from pixels to 0.0 to 1.0
-    vec2 zeroToOne = a_position / u_resolution;
-
-    // convert from 0->1 to 0->2
-    vec2 zeroToTwo = zeroToOne * 2.0;
-
-    // convert from 0->2 to -1->+1 (clip space)
-    vec2 clipSpace = zeroToTwo - 1.0;
-
-    // invert y coordinates to match canvas's 2d context coordinates
-    // that go on y axis from 0 up from the top
-    clipSpace.y *= -1.;
-
-    gl_Position = vec4(clipSpace, 0., 1.);
+    gl_Position = vec4(u_projection * vec3(a_position, 1), 1);
   }
 `;
 
 const rectangleFragment = `
-  // fragment shaders don't have a default precision so we need
-  // to pick one. mediump is a good default
   precision mediump float;
 
   void main() {
-    // gl_FragColor is a special variable a fragment shader
-    // is responsible for setting
     gl_FragColor = vec4(1, 0, 0.5, 1); // return reddish-purple
   }
 `;
@@ -66,6 +48,6 @@ const buffersData = {
 
 window.addEventListener('load', () => {
   const [gl] = getWebGLContext();
-  const drawRectangle = initializeOnce(gl, rectangleVertex, rectangleFragment, buffersData);
+  const drawRectangle = newWebGLRenderer(gl, rectangleVertex, rectangleFragment, buffersData);
   drawRectangle();
 });

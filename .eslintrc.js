@@ -1,3 +1,5 @@
+const WARN = 'warn';
+
 module.exports = {
   env: {
     browser: true,
@@ -12,9 +14,10 @@ module.exports = {
     sourceType: 'module',
   },
   rules: {
-    'linebreak-style': ['warn', 'windows'],
-    indent: ['warn', 2],
-    quotes: ['warn', 'single'],
-    semi: ['warn', 'always'],
+    'linebreak-style': [WARN, 'windows'],
+    'no-unused-vars': WARN,
+    indent: [WARN, 2],
+    quotes: [WARN, 'single'],
+    semi: [WARN, 'always'],
   },
 };

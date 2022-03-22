@@ -85,7 +85,7 @@ function createProgram(gl, vertexShader, fragmentShader) {
   return program;
 }
 
-function initializeOnce() {
+function newWebGLRenderer() {
   const canvas = document.getElementById('canvas');
   !canvas && err('Could not find canvas in document');
 
@@ -148,6 +148,6 @@ function initializeOnce() {
 }
 
 window.addEventListener('load', () => {
-  const drawTriangle = initializeOnce();
+  const drawTriangle = newWebGLRenderer();
   drawTriangle();
 });

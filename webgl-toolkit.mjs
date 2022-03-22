@@ -6,15 +6,17 @@ export function getWebGLContext() {
   const canvas = document.getElementById('canvas');
   !canvas && err('Could not find canvas in document');
 
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
   const gl = canvas.getContext('webgl');
   !gl && err('WebGL context not avilable');
 
   return [gl, canvas];
 }
 
-// Returns a random integer from 0 to range - 1.
-export function randomInt(range) {
-  return Math.floor(Math.random() * range);
+function getPivotPoints(width, height) {
+  return Array.from({ length: 6 }, () => [-0.5 * width, -0.5 * height]).flat();
 }
 
 export function getRectangleCoords(x, y, width, height) {
@@ -43,6 +45,15 @@ export function setRectangle(gl, x, y, width, height) {
     new Float32Array(getRectangleCoords(x, y, width, height)),
     gl.STATIC_DRAW,
   );
+}
+
+function setProjectionMatrix(gl, projectionLocation, viewWidth, viewHeight) {
+  // prettier-ignore
+  gl.uniformMatrix3fv(projectionLocation, false, [
+    2 / viewWidth, 0, 0,
+    0, -2 / viewHeight, 0,
+    -1, 1, 1
+  ]);
 }
 
 function createShader(gl, type, source) {
@@ -144,7 +155,15 @@ function defaultRenderer(gl, passesCount) {
   );
 }
 
-export function initializeOnce(
+function getUvFromSpriteData(image, { position, size }) {
+  return getRectangleCoords(
+    position[0] / image.width,
+    position[1] / image.height,
+    size[0] / image.width,
+    size[1] / image.height,
+  );
+}
+export function newWebGLRenderer(
   gl,
   vertexSource,
   fragmentSource,
@@ -154,44 +173,39 @@ export function initializeOnce(
   spritesAtlasData = undefined,
 ) {
   const { canvas } = gl;
-
   const { program, params } = createProgram(gl, vertexSource, fragmentSource);
   const { uniforms, attributes } = params;
 
-  const positionsCoord = spritesAtlasData
-    ? spritesAtlasData.map(({ size }) => getRectangleCoords(0, 0, size[0], size[1])).flat()
-    : buffersData.position;
-
   // prettier-ignore
-  const uv = spritesAtlasData
-    ? spritesAtlasData
-      .map(({ position, size }) =>
-        getRectangleCoords(
-          position[0] / image.width,
-          position[1] / image.height,
-          size[0] / image.width,
-          size[1] / image.height,
-        ),
-      )
-      .flat()
-    : params.attributes.uv
-      ? buffersData.uv /* default UVs */ ?? [
-        0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0,
-      ]
-      : undefined;
+  const positions =
+    spritesAtlasData?.map(({ size }) => getRectangleCoords(0, 0, size[0], size[1])).flat()
+    ?? buffersData?.position
+    ?? getRectangleCoords(0, 0, canvas.width, canvas.height);
 
-  const buffers = [[createBuffer(gl, positionsCoord), attributes.position.location]];
+  const buffers = [[createBuffer(gl, positions), attributes.position.location]];
 
-  if (uv) {
+  if (image) {
+    // prettier-ignore
+    const uv =
+      spritesAtlasData?.map((sprite) => getUvFromSpriteData(image, sprite)).flat()
+      ?? buffersData?.uv
+      ?? [0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0];
+
+    // prettier-ignore
+    const pivot =
+      spritesAtlasData?.map(({ size }) => getPivotPoints(size[0], size[1])).flat()
+      ?? getPivotPoints(image.width, image.height);
+
     buffers.push([createBuffer(gl, uv), attributes.uv.location]);
+    if (attributes.pivot) buffers.push([createBuffer(gl, pivot), attributes.pivot.location]);
+    setupTexture(gl, image);
   }
-
-  if (image) setupTexture(gl, image);
 
   return (updatedData) => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    gl.viewport(0, 0, canvas.width, canvas.height);
+    const { width, height } = canvas;
+    gl.viewport(0, 0, width, height);
 
     // Clear the canvas
     gl.clearColor(0, 0, 0, 0);
@@ -211,9 +225,9 @@ export function initializeOnce(
       gl.vertexAttribPointer(location, 2, gl.FLOAT, false, 0, 0);
     });
 
-    gl.uniform2f(uniforms.resolution.location, canvas.width, canvas.height);
+    setProjectionMatrix(gl, uniforms.projection.location, width, height);
 
-    const renderPassesCount = Math.round(positionsCoord.length) / 2;
+    const renderPassesCount = Math.round(positions.length) / 2;
     renderer(gl, renderPassesCount, uniforms, attributes, updatedData);
   };
 }

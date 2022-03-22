@@ -1,31 +1,14 @@
-import { getWebGLContext, initializeOnce, getRectangleCoords } from '../tools.mjs';
+import { getWebGLContext, newWebGLRenderer, getRectangleCoords } from '../webgl-toolkit.mjs';
 
 const vertexSource = `
   attribute vec2 a_position;
   attribute vec2 a_uv;
-
-  uniform vec2 u_resolution;
+  uniform mat3 u_projection;
   uniform vec2 u_translation;
-
   varying vec2 v_uv;
 
   void main() {
-    vec2 position = a_position + u_translation;
-
-    // convert the rectangle from pixels to 0.0 to 1.0
-    vec2 zeroToOne = position / u_resolution;
-
-    // convert from 0->1 to 0->2
-    vec2 zeroToTwo = zeroToOne * 2.0;
-
-    // convert from 0->2 to -1->+1 (clipspace)
-    vec2 clipSpace = zeroToTwo - 1.0;
-
-    // flip y coordiantes to match the usual browser approach
-    gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);
-
-    // pass the uv to the fragment shader
-    // The GPU will interpolate this value between points.
+    gl_Position = vec4(u_projection * vec3(a_position + u_translation, 1), 1);
     v_uv = a_uv;
   }
 `;
@@ -33,10 +16,7 @@ const vertexSource = `
 const fragmentSource = `
   precision mediump float;
 
-  // our texture
   uniform sampler2D u_image;
-
-  // the uvs passed in from the vertex shader.
   varying vec2 v_uv;
 
   void main() {
@@ -75,7 +55,7 @@ window.addEventListener('load', () => {
       position: getRectangleCoords(0, 0, image.width, image.height),
     };
     const [gl] = getWebGLContext();
-    const renderImage = initializeOnce(
+    const renderImage = newWebGLRenderer(
       gl,
       vertexSource,
       fragmentSource,
